@@ -28,10 +28,10 @@ def find_files(path, name):
         Looks in the directory "path".
         Returns a list with the files starting with 'name'.
     """
-    n.file = []
+    nfile = []
     for item in listdir(path):
         if item.startswith(name):
-            nfile.apend(item)
+            nfile.append(item)
     return nfile
 
     
