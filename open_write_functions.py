@@ -10,12 +10,12 @@ def open_csv(path, delimiter = '\t', skip = 1, columns = []):
         for row in file:
             import pdb ; pdb.set_trace()
             try: 
-                if not columns:
-                    output = [row[i] for i in row if i in [columns]]
+                if columns:
+                    output.append([row[i] for i,el in enumerate(row) if i in columns])
                 else:
                     output.append(map(float,row[columns]))
             except:
-                pass
+                print 'elements must be integers or float numbers, no strings allowed'
     return output
     
 def write_line(file,line):
