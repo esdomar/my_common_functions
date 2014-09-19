@@ -14,16 +14,42 @@ def dtype_sdk_gazedata():
     
     return dt
     
+    
 def find_timestamp(timestamp_array, timestamp):
     """
         Returns the index of the closest timestamp in the ET gaze data
         Used to find the row of the closest ET sample of every stimuli onset
     """
     #import pdb; pdb.set_trace()
+    if timestamp < timestamp_array[0] or timestamp > timestamp_array[-1]:
+        raise ValueError('Timestamp provided is not within the ET samples')
     value = timestamp
     for i, item in enumerate(timestamp_array):
         if abs(item-timestamp) > value:
             return i - 1
         else:
             value = abs(item-timestamp)
-    raise ValueError('Timestamp provided is not within the ET samples')
+
+
+def num_samples(sampling_rate, time):
+    '''
+        Returns the number of samples of a given duration depending on the sampling rate.
+    '''
+    time = time/float(1000)
+    return int(round(sampling_rate*time, 0))
+    
+    
+def per_valid_et_data(validity_right, validity_left):
+    '''
+        Returns the percentage of valid ET data.
+        Any sample where some et data was found will be returned, it doesnt matter what code
+    '''
+    return round(len([i for i,right in enumerate(validity_right) if right != 4 and validity_left[i] != 4 ])/float(len(validity_right))*100, 2)
+
+
+def per_valid_et_data_both_eyes_found(validity_right, validity_left):
+    '''
+        Returns the percentage of valid ET data.
+        Only samples where both eyes were found correctly.
+    '''
+    return round(len([i for i,right in enumerate(validity_right) if right == 0 and validity_left[i] == 0 ])/float(len(validity_right))*100, 2)
