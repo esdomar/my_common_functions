@@ -1,3 +1,27 @@
+'''
+Functions implemented:
+    Opening data:
+        - dtype_sdk_gazedata():
+        - open_gaze_data(file_path):
+    Looking for samples:
+        - find_timestamp(timestamp_array, timestamp):
+        - num_samples(sampling_rate, time):
+    Percentage of data:
+        - per_valid_et_data(validity_right, validity_left):
+        - per_valid_et_data_both_eyes_found(validity_right, validity_left):
+        - per_inside_aoi(x, y, aoi, distance):
+        -per_outside_screen(
+    Eye average:
+    - eye_average(left_eye, right_eye, validity_left, validity_right ):
+    - select_average_value(left_eye, right_eye, validity_left, validity_right):
+    Transforming data:
+        - distance_pixels(x1, y1, x2, y2):
+    Preprocessing:
+        -
+
+
+'''
+
 import numpy as np
 import math
 
@@ -6,14 +30,14 @@ def dtype_sdk_gazedata():
     """
         Returns the data type necessary to import raw ET data in a numpy array
     """
-    dt = np.dtype([('Trigger', np.int), ('ET_timestamp', np.int64), ('Local_timestamp',np.int64), 
-                 ('Left', [('Eye_x',np.float_), ('Eye_y',np.float_), ('Eye_z',np.float_),
-                 ('Eye_rel_x',np.float_), ('Eye_rel_y',np.float_), ('Eye_rel_z',np.float_), 
-                 ('x',np.float_), ('y', np.float_), ('x_3d',np.float_), ('y_3d', np.float_), 
-                 ('z_3d', np.float_), ('Pupil',np.float_), ('Validity', np.int)]),('Right', [('Eye_x',np.float_), 
-                 ('Eye_y',np.float_), ('Eye_z',np.float_),('Eye_rel_x',np.float_), ('Eye_rel_y',np.float_), 
-                 ('Eye_rel_z',np.float_), ('x',np.float_), ('y', np.float_), ('x_3d',np.float_), ('y_3d', np.float_),                 
-                 ('z_3d', np.float_), ('Pupil',np.float_), ('Validity', np.int)])])
+    dt = np.dtype([('Trigger', np.int), ('ET_timestamp', np.int64), ('Local_timestamp', np.int64),
+                 ('Left', [('Eye_x',np.float_), ('Eye_y', np.float_), ('Eye_z', np.float_),
+                 ('Eye_rel_x', np.float_), ('Eye_rel_y', np.float_), ('Eye_rel_z', np.float_),
+                 ('x', np.float_), ('y', np.float_), ('x_3d',np.float_), ('y_3d', np.float_),
+                 ('z_3d', np.float_), ('Pupil', np.float_), ('Validity', np.int)]),('Right', [('Eye_x', np.float_),
+                 ('Eye_y', np.float_), ('Eye_z', np.float_),('Eye_rel_x',np.float_), ('Eye_rel_y', np.float_),
+                 ('Eye_rel_z', np.float_), ('x', np.float_), ('y', np.float_), ('x_3d', np.float_), ('y_3d', np.float_),
+                 ('z_3d', np.float_), ('Pupil', np.float_), ('Validity', np.int)])])
     
     return dt
     
@@ -27,6 +51,7 @@ def find_timestamp(timestamp_array, timestamp):
     """
         Returns the index of the closest timestamp in the ET gaze data
         Used to find the row of the closest ET sample of every stimuli onset
+        Returns -1 if the timestamp provided is not within the list of timestamps given
     """
     #import pdb; pdb.set_trace()
     if timestamp < timestamp_array[0] or timestamp > timestamp_array[-1]:
@@ -37,6 +62,7 @@ def find_timestamp(timestamp_array, timestamp):
             return i - 1
         else:
             value = abs(item-timestamp)
+    return -1
 
 
 def num_samples(sampling_rate, time):
@@ -105,14 +131,40 @@ def distance_pixels(x1, y1, x2, y2):
     return math.sqrt((x1-x2)**2 + (y1-y2)**2)
 
 
-def per_inside_aoi(x, y, aoi, distance):
-    inside = 0
+def per_outside_screen(x, y, x_offset=0.5, y_offset=0.25, x_screen_max=1, y_screen_max=1, x_screen_min=0, y_screen_min=0):
+
     if type(x) is list and len(x) != len(y):
-            raise ValueError('X and Y length must the equal')
+            raise ValueError('X and Y length must have equal lengths')
 
-    for i, sample_x in enumerate(x):
-        distance_sample = distance_pixels(sample_x, y[i], aoi[0], aoi[1])
+    outside = 0
+    for i, xsample in enumerate(x):
+        if xsample < x_screen_max + x_offset and y[i] < y_screen_max + y_offset:
+            if xsample > -x_offset and y[i] > -y_offset:
+                if (xsample > x_screen_max and xsample < x_screen_max + x_offset) or (y[i] > y_screen_max and y[i] < y_screen_max + y_offset) or \
+                        (xsample < x_screen_min and xsample > -x_offset) or (y[i] < y_screen_min and y[i] > -y_offset):
+                    if xsample != -1:
+                        outside += 1
+    try:
+        return round((outside/float(len(x)))*100, 2)
+    except:
+        return 'error'
 
-        if distance_sample <= distance:
+
+def per_inside_aoi(x, y, x_min=0, y_min= 0, x_max=1, y_max= 1):
+    '''
+    This functions only calculates percentage of data inside a square aoi
+    input:  x, y: arrays of the same length with x and y coordinates in pixels
+            aoi: center of the aoi
+    output: percentage of the data passed to the function were the et data is inside the aoi
+    '''
+    if type(x) is list and len(x) != len(y):
+            raise ValueError('X and Y length must have equal lengths')
+
+    inside=0
+    for i, xsample in enumerate(x):
+        if xsample > x_min and xsample < x_max and y[i] > y_min and y[i] < y_max:
             inside += 1
-    return (inside/float(len(x)))*100
+    try:
+        return round((inside/float(len(x)))*100,2)
+    except:
+        return 'error'
